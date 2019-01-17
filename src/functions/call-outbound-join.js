@@ -27,17 +27,12 @@ exports.handler = async function(context, event, callback) {
 
         console.log(attributes);
 
-        const [to, from] = [attributes.to, attributes.from];
-
         console.log(`initiate outbound call to: ${attributes.to}`);
-        console.log(to);
-        console.log(from);
+        console.log(attributes.to);
+        console.log(attributes.from);
 
-        if (to.length == 10) {
-            to = `1${to}`;
-        }
-
-        const participant = await addParticipantToConference(client, context, event.ConferenceSid, to, from);
+        const normalizedTo = normalizePhoneNumber(attributes.to);
+        const participant = await addParticipantToConference(client, context, event.ConferenceSid, normalizedTo, from);
 
         console.log(`call triggered, callSid ${participant.callSid}`);
 
@@ -88,3 +83,11 @@ function addParticipantToConference (client, context, conferenceSid, to, from) {
       endConferenceOnExit: true
     });
 };
+
+function normalizePhoneNumber(phoneNumber) {
+  if (phoneNumber.length == 10) {
+    return `1${phoneNumber}`;
+  }
+
+  return phoneNumber;
+}
