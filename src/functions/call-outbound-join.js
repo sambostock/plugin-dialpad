@@ -34,11 +34,13 @@ exports.handler = function(context, event, callback) {
 
     client.calls(event.CallSid)
       .fetch()
-      .then(call => {
+      .then(async call => {
         if (call.to.includes('client')) {
           console.log(`agent ${call.to} joined the conference`);
 
-          return fetchTask(client, context, taskSid).then(task => {
+          try {
+            const task = await fetchTask(client, context, taskSid);
+
             attributes = {...JSON.parse(task.attributes)
             }
 
@@ -51,9 +53,8 @@ exports.handler = function(context, event, callback) {
 
             console.log(attributes);
 
-            return [attributes.to, attributes.from];
+            const [to, from] = [attributes.to, attributes.from];
 
-          }).then(([to, from]) => {
             console.log(`initiate outbound call to: ${attributes.to}`);
             console.log(to);
             console.log(from);
@@ -62,23 +63,21 @@ exports.handler = function(context, event, callback) {
                 to = `1${to}`;
             }
 
-            return addParticipantToConference(client, context, event.ConferenceSid, to, from);
+            const participant = await addParticipantToConference(client, context, event.ConferenceSid, to, from);
 
-          }).then(participant => {
             console.log(`call triggered, callSid ${participant.callSid}`);
 
             attributes.conference.participants.customer = participant.callSid;
 
-            return updateTaskAttributes(client, context, taskSid, attributes);
+            await updateTaskAttributes(client, context, taskSid, attributes);
 
-          }).then(task => {
             console.log(`updated task ${taskSid} with new attributes: ${JSON.stringify(attributes)}`);
             return;
 
-          }).catch(error => {
+          } catch(error) {
             console.log('an error occurred', error);
             callback(error);
-          });
+          }
 
         } else {
           console.log('the customer joined, nothing to do here');
