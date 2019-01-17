@@ -15,16 +15,13 @@ exports.handler = async function(context, event, callback) {
       }
 
       console.log('all tasks done');
-      callback();
-
     } catch(error) {
       console.log('an error occurred', error);
-      callback(error);
+      return callback(error);
     }
-
-  } else {
-    callback();
   }
+
+  callback();
 };
 
 async function initiateOutboundCall(client, context, event, taskSid, call) {
