@@ -23,7 +23,7 @@ const addParticipantToConference = (client, context, conferenceSid, to, from) =>
     });
 };
 
-exports.handler = function(context, event, callback) {
+exports.handler = async function(context, event, callback) {
   const client = context.getTwilioClient();
   const taskSid = event.FriendlyName;
 
@@ -32,66 +32,57 @@ exports.handler = function(context, event, callback) {
   if (event.StatusCallbackEvent === 'participant-join') {
     console.log(`callSid ${event.CallSid} joined, task is ${taskSid}, conference is ${event.ConferenceSid}`);
 
-    client.calls(event.CallSid)
-      .fetch()
-      .then(async call => {
-        if (call.to.includes('client')) {
-          console.log(`agent ${call.to} joined the conference`);
+    try {
+      const call = await client.calls(event.CallSid).fetch()
 
-          try {
-            const task = await fetchTask(client, context, taskSid);
+      if (call.to.includes('client')) {
+        console.log(`agent ${call.to} joined the conference`);
 
-            attributes = {...JSON.parse(task.attributes)
-            }
+        const task = await fetchTask(client, context, taskSid);
 
-            attributes.conference = {
-              sid: event.ConferenceSid,
-              participants: {
-                worker: event.CallSid
-              }
-            };
-
-            console.log(attributes);
-
-            const [to, from] = [attributes.to, attributes.from];
-
-            console.log(`initiate outbound call to: ${attributes.to}`);
-            console.log(to);
-            console.log(from);
-
-            if (to.length == 10) {
-                to = `1${to}`;
-            }
-
-            const participant = await addParticipantToConference(client, context, event.ConferenceSid, to, from);
-
-            console.log(`call triggered, callSid ${participant.callSid}`);
-
-            attributes.conference.participants.customer = participant.callSid;
-
-            await updateTaskAttributes(client, context, taskSid, attributes);
-
-            console.log(`updated task ${taskSid} with new attributes: ${JSON.stringify(attributes)}`);
-            return;
-
-          } catch(error) {
-            console.log('an error occurred', error);
-            callback(error);
-          }
-
-        } else {
-          console.log('the customer joined, nothing to do here');
-          return;
+        attributes = {...JSON.parse(task.attributes)
         }
 
-      }).then(() => {
-        console.log('all tasks done');
-        callback();
+        attributes.conference = {
+          sid: event.ConferenceSid,
+          participants: {
+            worker: event.CallSid
+          }
+        };
 
-      }).catch(error => {
-        console.log('an error occurred', error);
-        callback(error);
-      });
+        console.log(attributes);
+
+        const [to, from] = [attributes.to, attributes.from];
+
+        console.log(`initiate outbound call to: ${attributes.to}`);
+        console.log(to);
+        console.log(from);
+
+        if (to.length == 10) {
+            to = `1${to}`;
+        }
+
+        const participant = await addParticipantToConference(client, context, event.ConferenceSid, to, from);
+
+        console.log(`call triggered, callSid ${participant.callSid}`);
+
+        attributes.conference.participants.customer = participant.callSid;
+
+        await updateTaskAttributes(client, context, taskSid, attributes);
+
+        console.log(`updated task ${taskSid} with new attributes: ${JSON.stringify(attributes)}`);
+
+      } else {
+        console.log('the customer joined, nothing to do here');
+      }
+
+      console.log('all tasks done');
+      callback();
+
+    } catch(error) {
+      console.log('an error occurred', error);
+      callback(error);
+    }
 
   } else {
     callback();
