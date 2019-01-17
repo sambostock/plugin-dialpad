@@ -1,28 +1,3 @@
-const fetchTask = (client, context, taskSid) => {
-  return client.taskrouter.workspaces(context.TWILIO_WORKSPACE_SID)
-    .tasks(taskSid)
-    .fetch();
-};
-
-const updateTaskAttributes = (client, context, taskSid, attributes) => {
-  return client.taskrouter.workspaces(context.TWILIO_WORKSPACE_SID)
-    .tasks(taskSid)
-    .update({
-      attributes: JSON.stringify(attributes)
-    });
-};
-
-const addParticipantToConference = (client, context, conferenceSid, to, from) => {
-  return client
-    .conferences(conferenceSid)
-    .participants.create({
-      to: to,
-      from: from,
-      earlyMedia: true,
-      endConferenceOnExit: true
-    });
-};
-
 exports.handler = async function(context, event, callback) {
   const client = context.getTwilioClient();
   const taskSid = event.FriendlyName;
@@ -87,4 +62,29 @@ exports.handler = async function(context, event, callback) {
   } else {
     callback();
   }
+};
+
+function fetchTask(client, context, taskSid) {
+  return client.taskrouter.workspaces(context.TWILIO_WORKSPACE_SID)
+    .tasks(taskSid)
+    .fetch();
+};
+
+function updateTaskAttributes(client, context, taskSid, attributes) {
+  return client.taskrouter.workspaces(context.TWILIO_WORKSPACE_SID)
+    .tasks(taskSid)
+    .update({
+      attributes: JSON.stringify(attributes)
+    });
+};
+
+function addParticipantToConference (client, context, conferenceSid, to, from) {
+  return client
+    .conferences(conferenceSid)
+    .participants.create({
+      to,
+      from,
+      earlyMedia: true,
+      endConferenceOnExit: true
+    });
 };
